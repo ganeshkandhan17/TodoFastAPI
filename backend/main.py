@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 import os
 from dotenv import load_dotenv
+from backend.model.db import connectDB
 
 load_dotenv()
-print(os.getenv("TEST"))
+connectDB()
 
 app = FastAPI()
 
