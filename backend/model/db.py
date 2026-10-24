@@ -19,6 +19,3 @@ db = db.cursor()
 
 def connectDB():
     db.execute("SELECT * FROM task")
-    rows = db.fetchall()
-    print(rows)
-    return rows

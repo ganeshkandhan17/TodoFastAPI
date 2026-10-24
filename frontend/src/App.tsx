@@ -1,30 +1,52 @@
 import { useState } from "react";
 import { Plus, Trash2, Edit, Check, X } from "lucide-react";
+import axios from "axios";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 interface Todo {
 	id: string;
 	text: string;
 	completed: boolean;
+	isEditing: boolean;
 }
+
+let defaultTodo: Todo = {
+	id: "",
+	text: "",
+	completed: false,
+	isEditing: false,
+};
 
 const App = () => {
 	const [todos, setTodos] = useState<Todo[]>([]);
-	const [inputValue, setInputValue] = useState("");
-	const [editingId, setEditingId] = useState<string | null>(null);
-	const [editValue, setEditValue] = useState("");
+	const [newTaskForm, setNewTaskForm] = useState(defaultTodo);
+	const [selectedEditTask, setSelectedEditTask] = useState<Todo>(defaultTodo);
+	const [editingTask, setEditingTask] = useState<Todo>(defaultTodo);
+	const [selectedDeleteTask, setSelectedDeleteTask] =
+		useState<Todo>(defaultTodo);
 
 	const addTodo = () => {
-		if (inputValue.trim()) {
-			setTodos([
-				...todos,
-				{
-					id: Date.now().toString(),
-					text: inputValue.trim(),
-					completed: false,
-				},
-			]);
-			setInputValue("");
-		}
+		axios
+			.post(`${BACKEND_URL}/`, { taskName: newTaskForm.text })
+			.then((response) => {
+				let { status = false } = response.data;
+				if (status) {
+					setTodos([
+						...todos,
+						{
+							id: Date.now().toString(),
+							text: newTaskForm.text.trim(),
+							completed: false,
+							isEditing: false,
+						},
+					]);
+					setNewTaskForm(defaultTodo);
+				}
+			})
+			.catch((err) => {
+				console.error(err);
+			});
 	};
 
 	const deleteTodo = (id: string) => {
@@ -40,30 +62,30 @@ const App = () => {
 	};
 
 	const startEdit = (todo: Todo) => {
-		setEditingId(todo.id);
-		setEditValue(todo.text);
+		setSelectedEditTask(todo);
+		setEditingTask(todo);
 	};
 
 	const saveEdit = (id: string) => {
-		if (editValue.trim()) {
+		if (editingTask.text.trim()) {
 			setTodos(
 				todos.map((todo) =>
-					todo.id === id ? { ...todo, text: editValue.trim() } : todo,
+					todo.id === id ? { ...todo, text: editingTask.text.trim() } : todo,
 				),
 			);
-			setEditingId(null);
-			setEditValue("");
+			setEditingTask(defaultTodo);
+			setSelectedEditTask(defaultTodo);
 		}
 	};
 
 	const cancelEdit = () => {
-		setEditingId(null);
-		setEditValue("");
+		setEditingTask(defaultTodo);
+		setSelectedEditTask(defaultTodo);
 	};
 
 	const handleKeyDown = (e: React.KeyboardEvent, action: () => void) => {
 		if (e.key === "Enter") action();
-		if (e.key === "Escape" && editingId) cancelEdit();
+		if (e.key === "Escape" && selectedEditTask) cancelEdit();
 	};
 
 	return (
@@ -76,8 +98,13 @@ const App = () => {
 				<div className='flex gap-2 mb-6'>
 					<input
 						type='text'
-						value={inputValue}
-						onChange={(e) => setInputValue(e.target.value)}
+						value={newTaskForm.text}
+						onChange={(e) => {
+							setNewTaskForm((prevState) => ({
+								...prevState,
+								text: e.target.value,
+							}));
+						}}
 						onKeyDown={(e) => handleKeyDown(e, addTodo)}
 						placeholder='Add a new task...'
 						className='flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500'
@@ -107,12 +134,17 @@ const App = () => {
 								onChange={() => toggleComplete(todo.id)}
 								className='w-5 h-5 text-blue-500 rounded border-gray-300 focus:ring-blue-500'
 							/>
-							{editingId === todo.id ? (
+							{todo.isEditing ? (
 								<>
 									<input
 										type='text'
-										value={editValue}
-										onChange={(e) => setEditValue(e.target.value)}
+										value={editingTask.text}
+										onChange={(e) => {
+											setEditingTask((prevState) => ({
+												...prevState,
+												text: e.target.value,
+											}));
+										}}
 										onKeyDown={(e) => handleKeyDown(e, () => saveEdit(todo.id))}
 										autoFocus
 										className='flex-1 px-3 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
