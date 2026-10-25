@@ -1,9 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 import os
 from dotenv import load_dotenv
 from backend.model.db import connectDB
 from pydantic import BaseModel
-from backend.model.db import db
+from backend.model.db import connectDB
 import uuid
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,7 +13,7 @@ class Task(BaseModel):
 
 
 load_dotenv()
-connectDB()
+
 
 app = FastAPI()
 
@@ -26,21 +26,46 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
 
 
 @app.post("/")
 async def createTask(taskName: Task):
     taskId = uuid.uuid4()
-    db.execute(
-        "insert into task (task_id,task_name) values(%s,%s)",
-        (str(taskId), taskName.taskName),
-    )
-    db.connection.commit()
-    return {"status": True, "taskId": taskId}
+    try:
+        with connectDB() as db:
+            db.execute(
+                "insert into task (task_id,task_name) values(%s,%s)",
+                (str(taskId), taskName.taskName),
+            )
+            db.connection.commit()
+            return {"status": True, "taskId": taskId}
+    except Exception as e:
+        raise HTTPException(status="400")
+
+
+@app.get("/")
+async def getTask():
+    try:
+        with connectDB() as db:
+            query = """
+                SELECT
+                    task_id,
+                    task_name,
+                    is_complete
+                FROM
+                    task
+                """
+            db.execute(query)
+            response = db.fetchall()
+            response = [
+                {"taskId": row[0], "taskName": row[1], "isComplete": row[2]}
+                for row in response
+            ]
+            return {"status": True, "tasks": response}
+    except Exception as e:
+        raise HTTPException(status="400")

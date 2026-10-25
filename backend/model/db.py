@@ -14,8 +14,6 @@ db = connect(
     dbname="todo", host=DB_HOST, user=DB_USER, port=DB_PORT, password=DB_PASSWORD
 )
 
-db = db.cursor()
-
 
 def connectDB():
-    db.execute("SELECT * FROM task")
+    return db.cursor()

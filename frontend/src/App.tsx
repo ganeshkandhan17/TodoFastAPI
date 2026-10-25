@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Trash2, Edit, Check, X } from "lucide-react";
 import axios from "axios";
 
@@ -26,7 +26,12 @@ const App = () => {
 	const [selectedDeleteTask, setSelectedDeleteTask] =
 		useState<Todo>(defaultTodo);
 
+	useEffect(() => {
+		fetchTodos();
+	}, []);
+
 	const addTodo = () => {
+		// Backend call to add tasks
 		axios
 			.post(`${BACKEND_URL}/`, { taskName: newTaskForm.text })
 			.then((response) => {
@@ -48,6 +53,22 @@ const App = () => {
 				console.error(err);
 			});
 	};
+
+	function fetchTodos() {
+		axios.get(`${BACKEND_URL}/`).then((response) => {
+			let { status = false, tasks = [] } = response.data;
+			let formatted: Todo[] = tasks.map((task: any) => {
+				let { taskId = "", taskName = "", isComplete = "incomplete" } = task;
+				return {
+					id: taskId,
+					text: taskName,
+					completed: isComplete == "completed" ? true : false,
+					isEditing: false,
+				};
+			});
+			setTodos(formatted);
+		});
+	}
 
 	const deleteTodo = (id: string) => {
 		setTodos(todos.filter((todo) => todo.id !== id));
