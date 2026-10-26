@@ -59,6 +59,8 @@ async def getTask():
                     is_complete
                 FROM
                     task
+                WHERE
+                    is_active = 'active'
                 """
             db.execute(query)
             response = db.fetchall()
@@ -69,3 +71,25 @@ async def getTask():
             return {"status": True, "tasks": response}
     except Exception as e:
         raise HTTPException(status="400")
+
+
+@app.delete("/")
+async def deleteTask(taskId: str):
+    taskId = str(taskId)
+    try:
+        with connectDB() as db:
+            query = """
+                UPDATE 
+                    task
+                SET
+                    is_active = 'inactive'
+                WHERE
+                    task_id = %s                  
+            """
+            db.execute(query, (taskId,))
+            db.connection.commit()
+            return {"status": True}
+    except Exception as e:
+        print("Error occurs in delete")
+        print(e)
+        return {}

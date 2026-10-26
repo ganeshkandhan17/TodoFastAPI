@@ -1,6 +1,17 @@
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Edit, Check, X } from "lucide-react";
 import axios from "axios";
+import {
+	AlertDialog,
+	AlertDialogContent,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogCancel,
+	AlertDialogAction,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
@@ -18,6 +29,9 @@ let defaultTodo: Todo = {
 	isEditing: false,
 };
 
+type Buttons = "addTask" | "editTask" | "deleteTask";
+type Dialogs = "deleteTask";
+
 const App = () => {
 	const [todos, setTodos] = useState<Todo[]>([]);
 	const [newTaskForm, setNewTaskForm] = useState(defaultTodo);
@@ -25,22 +39,29 @@ const App = () => {
 	const [editingTask, setEditingTask] = useState<Todo>(defaultTodo);
 	const [selectedDeleteTask, setSelectedDeleteTask] =
 		useState<Todo>(defaultTodo);
+	const [dialogOpen, setDialogOpen] = useState<Record<Dialogs, boolean>>({
+		deleteTask: false,
+	});
+	const [buttonDisabled, setButtonDisabled] = useState<
+		Record<Buttons, boolean>
+	>({ addTask: false, editTask: false, deleteTask: false });
 
 	useEffect(() => {
 		fetchTodos();
 	}, []);
 
 	const addTodo = () => {
+		changeButtonDisabled("addTask", true);
 		// Backend call to add tasks
 		axios
 			.post(`${BACKEND_URL}/`, { taskName: newTaskForm.text })
 			.then((response) => {
-				let { status = false } = response.data;
+				let { status = false, taskId } = response.data;
 				if (status) {
 					setTodos([
 						...todos,
 						{
-							id: Date.now().toString(),
+							id: taskId,
 							text: newTaskForm.text.trim(),
 							completed: false,
 							isEditing: false,
@@ -51,6 +72,9 @@ const App = () => {
 			})
 			.catch((err) => {
 				console.error(err);
+			})
+			.finally(() => {
+				changeButtonDisabled("addTask", false);
 			});
 	};
 
@@ -70,9 +94,23 @@ const App = () => {
 		});
 	}
 
-	const deleteTodo = (id: string) => {
-		setTodos(todos.filter((todo) => todo.id !== id));
-	};
+	function deleteTask() {
+		changeButtonDisabled("deleteTask", true);
+		axios
+			.delete(`${BACKEND_URL}/`, {
+				params: { taskId: selectedDeleteTask.id },
+			})
+			.then((response) => {
+				setTodos((prevState) =>
+					prevState.filter((t) => t.id != selectedDeleteTask.id),
+				);
+				changeDialogOpen("deleteTask", false);
+			})
+			.catch((err) => {})
+			.finally(() => {
+				changeButtonDisabled("deleteTask", false);
+			});
+	}
 
 	const toggleComplete = (id: string) => {
 		setTodos(
@@ -108,6 +146,19 @@ const App = () => {
 		if (e.key === "Enter") action();
 		if (e.key === "Escape" && selectedEditTask) cancelEdit();
 	};
+
+	function changeButtonDisabled(button: Buttons, state: boolean) {
+		setButtonDisabled((prevState) => ({ ...prevState, [button]: state }));
+	}
+
+	function handleDeleteClick(task: Todo) {
+		setSelectedDeleteTask(task);
+		changeDialogOpen("deleteTask", true);
+	}
+
+	function changeDialogOpen(dialog: Dialogs, state: boolean) {
+		setDialogOpen((prevState) => ({ ...prevState, [dialog]: state }));
+	}
 
 	return (
 		<div className='min-h-screen bg-gray-50 flex items-center justify-center p-4'>
@@ -204,7 +255,7 @@ const App = () => {
 										<Edit size={18} />
 									</button>
 									<button
-										onClick={() => deleteTodo(todo.id)}
+										onClick={() => handleDeleteClick(todo)}
 										className='p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors'
 										aria-label='Delete'
 									>
@@ -223,6 +274,39 @@ const App = () => {
 					</div>
 				)}
 			</div>
+
+			<AlertDialog
+				open={dialogOpen.deleteTask}
+				onOpenChange={(state) => {
+					changeDialogOpen("deleteTask", state);
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete Task</AlertDialogTitle>
+						<AlertDialogDescription>
+							Are you sure you want to delete "{selectedDeleteTask.text}"? This
+							action cannot be undone.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<Button
+							disabled={buttonDisabled.deleteTask}
+							onClick={() => changeDialogOpen("deleteTask", false)}
+						>
+							Cancel
+						</Button>
+						<Button
+							disabled={buttonDisabled.deleteTask}
+							onClick={(e) => {
+								deleteTask();
+							}}
+						>
+							Delete
+						</Button>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
 		</div>
 	);
 };
