@@ -112,6 +112,28 @@ const App = () => {
 			});
 	}
 
+	function editTask() {
+		axios
+			.put(`${BACKEND_URL}`, {
+				taskName: editingTask.text,
+				taskId: editingTask.id,
+			})
+			.then((response) => {
+				let { status } = response.data;
+				setTodos((prevState) =>
+					prevState.map(
+						(t): Todo =>
+							t.id == editingTask.id
+								? { ...t, isEditing: false, text: editingTask.text }
+								: t,
+					),
+				);
+			})
+			.catch((err) => {
+				console.log(err);
+			});
+	}
+
 	const toggleComplete = (id: string) => {
 		setTodos(
 			todos.map((todo) =>
@@ -158,6 +180,24 @@ const App = () => {
 
 	function changeDialogOpen(dialog: Dialogs, state: boolean) {
 		setDialogOpen((prevState) => ({ ...prevState, [dialog]: state }));
+	}
+
+	function handleEditClick(task: Todo) {
+		if (selectedEditTask.id != task.id) {
+			setTodos((prevState) =>
+				prevState.map(
+					(t): Todo =>
+						t.id == selectedEditTask.id ? { ...t, isEditing: false } : t,
+				),
+			);
+		}
+		setEditingTask(task);
+		setSelectedEditTask(task);
+		setTodos((prevState) =>
+			prevState.map(
+				(t): Todo => (t.id == task.id ? { ...t, isEditing: true } : t),
+			),
+		);
 	}
 
 	return (
@@ -217,12 +257,12 @@ const App = () => {
 												text: e.target.value,
 											}));
 										}}
-										onKeyDown={(e) => handleKeyDown(e, () => saveEdit(todo.id))}
+										onKeyDown={(e) => handleKeyDown(e, () => editTask())}
 										autoFocus
 										className='flex-1 px-3 py-1 border border-blue-500 rounded focus:outline-none focus:ring-2 focus:ring-blue-500'
 									/>
 									<button
-										onClick={() => saveEdit(todo.id)}
+										onClick={() => editTask()}
 										className='p-2 text-green-500 hover:bg-green-100 rounded transition-colors'
 										aria-label='Save'
 									>
@@ -248,7 +288,7 @@ const App = () => {
 										{todo.text}
 									</span>
 									<button
-										onClick={() => startEdit(todo)}
+										onClick={() => handleEditClick(todo)}
 										className='p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded transition-colors'
 										aria-label='Edit'
 									>

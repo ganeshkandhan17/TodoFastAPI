@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 class Task(BaseModel):
     taskName: str
+    taskId: str | None
 
 
 load_dotenv()
@@ -93,3 +94,23 @@ async def deleteTask(taskId: str):
         print("Error occurs in delete")
         print(e)
         return {}
+
+
+@app.put("/")
+async def editTask(Task: Task):
+    try:
+        with connectDB() as db:
+            query = """
+            UPDATE
+                task
+            SET
+                task_name  = %s               
+            WHERE
+                task_id = %s
+            """
+            db.execute(query, (Task.taskName, Task.taskId))
+            db.connection.commit()
+    except Exception as e:
+        print("Error in the")
+        return {"status": False}
+    return {}
