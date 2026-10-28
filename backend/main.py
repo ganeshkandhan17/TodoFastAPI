@@ -9,8 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 class Task(BaseModel):
-    taskName: str
-    taskId: str | None
+    taskName: str | None = None
+    taskId: str | None = None
+    isCompleted: bool | None = None
 
 
 load_dotenv()
@@ -114,3 +115,26 @@ async def editTask(Task: Task):
         print("Error in the")
         return {"status": False}
     return {}
+
+
+@app.put("/change-status")
+async def changeStatus(Task: Task):
+    print("entered")
+    taskStatus = Task.isCompleted
+    taskId = Task.taskId
+    taskStatus = "completed" if bool(taskStatus) else "incomplete"
+    try:
+        with connectDB() as db:
+            query = """
+            UPDATE
+                task
+            SET
+                is_complete = %s
+            WHERE
+                task_id = %s
+            """
+            db.execute(query, (taskStatus, taskId))
+            db.connection.commit()
+            return {"status": True}
+    except Exception as e:
+        return {"status": False}

@@ -134,6 +134,25 @@ const App = () => {
 			});
 	}
 
+	function changeStatus(task: Todo) {
+		axios
+			.put(`${BACKEND_URL}/change-status`, {
+				taskId: task.id,
+				isCompleted: !task.completed,
+			})
+			.then((response) => {
+				setTodos((prevState) =>
+					prevState.map(
+						(t): Todo =>
+							t.id == task.id ? { ...t, completed: !task.completed } : t,
+					),
+				);
+			})
+			.catch((err) => {
+				console.log(err);
+			});
+	}
+
 	const toggleComplete = (id: string) => {
 		setTodos(
 			todos.map((todo) =>
@@ -243,7 +262,7 @@ const App = () => {
 							<input
 								type='checkbox'
 								checked={todo.completed}
-								onChange={() => toggleComplete(todo.id)}
+								onChange={() => changeStatus(todo)}
 								className='w-5 h-5 text-blue-500 rounded border-gray-300 focus:ring-blue-500'
 							/>
 							{todo.isEditing ? (
