@@ -1,17 +1,15 @@
-import { useEffect, useState } from "react";
-import { Plus, Trash2, Edit, Check, X } from "lucide-react";
-import axios from "axios";
 import {
 	AlertDialog,
 	AlertDialogContent,
-	AlertDialogHeader,
-	AlertDialogTitle,
 	AlertDialogDescription,
 	AlertDialogFooter,
-	AlertDialogCancel,
-	AlertDialogAction,
+	AlertDialogHeader,
+	AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import axios from "axios";
+import { Check, Edit, Plus, Trash2, X } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
