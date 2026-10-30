@@ -92,6 +92,7 @@ const App = () => {
 		});
 	}
 
+	// Function to delete task
 	function deleteTask() {
 		changeButtonDisabled("deleteTask", true);
 		axios
